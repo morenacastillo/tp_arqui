@@ -1,0 +1,8 @@
+---
+- name: Instalar-tools
+  package:
+    name: 
+      - htop
+      - tmux
+      - speedtest-cli
+    state: present
