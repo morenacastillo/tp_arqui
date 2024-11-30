@@ -1,0 +1,14 @@
+---
+- name: Configuración de Servidores del TP Integral
+  hosts: servidores
+  become: yes
+
+  vars:
+    nombre_grupo: "Grupo4"            
+
+  roles:
+    - TP_INI
+    - Alta_Usuarios_Grupo4
+    - Sudoers_Grupo4
+    - Instala_tools_Grupo4
+

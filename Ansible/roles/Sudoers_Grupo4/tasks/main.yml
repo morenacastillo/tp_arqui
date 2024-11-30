@@ -1,2 +1,8 @@
 ---
-# tasks file for Sudoers_Grupo4
+- name: Sudo sin constraseña
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: '^%{{ nombre_grupo }}'
+    line: '%{{ nombre_grupo }} ALL=(ALL) NOPASSWD:ALL'
+    validate: 'visudo -cf %s'

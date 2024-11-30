@@ -1,2 +1,10 @@
 ---
-# vars file for TP_INI
+grupo_nombre: "Grupo4"
+division: "Division 313"
+integrantes: 
+  - nombre: "Emiliano David"
+    apellido: "Centurion"
+  - nombre: "Morena"
+    apellido: "Castillo"
+  - nombre: "Ernesto Jose"
+    apellido: "Hermenegildo"
