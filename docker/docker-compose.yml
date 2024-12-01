@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+    web:
+        image: morenacastillo/tp-div_313_grupo_4
+          #emilianocenturion/tp-div_313_grupo_4
+        ports:
+          - 8081:80
+        volumes:
+            - ./web/file:/usr/share/nginx/html/file
+        
+        
+
