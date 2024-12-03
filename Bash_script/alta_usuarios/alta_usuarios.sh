@@ -1,46 +1,45 @@
 #!/bin/bash
 clear
 
-###############################
-#
-# Parámetros:
-#  - Lista de Usuarios a crear
-#  - Usuario del cual se obtendrá la clave
-#
-#  Tareas:
-#  - Crear los usuarios según la lista recibida en los grupos descriptos
-#  - Los usuarios deberán de tener la misma clave que la del usuario pasado por parámetro
-#
-###############################
+LISTA=Lista_Usuarios.txt
 
-LISTA=$1
-USUARIO_PARAMETRO=$2
-PASSWD=$(sudo grep $USUARIO_PARAMETRO /etc/shadow | awk -F ',' '{print $2}')
+if [[ -z $LISTA ]]; then
+    echo "Error: Debes proporcionar un archivo de lista de usuarios como parámetro."
+    exit 1
+fi
+
+if [[ ! -f $LISTA ]]; then
+    echo "Error: El archivo $LISTA no existe."
+    exit 1
+fi
 
 ANT_IFS=$IFS
 IFS=$'\n'
-for LINEA in `cat $LISTA | grep -v ^#`
-do
+
+for LINEA in $(cat $LISTA | grep -v '^#'); do
+    # Separar campos por coma
     USUARIO=$(echo $LINEA | awk -F ',' '{print $1}')
     GRUPO=$(echo $LINEA | awk -F ',' '{print $2}')
-    DIRECTORIO=$(echo $LINEA | awk -F ',' '{print $3}')
+    DIR_HOME=$(echo $LINEA | awk -F ',' '{print $3}')
 
+    # Crear grupo si no existe
     if ! grep -q "^$GRUPO:" /etc/group; then
-    	sudo groupadd $GRUPO
+        echo "Creando grupo $GRUPO..."
+        sudo groupadd $GRUPO
     fi
-  
-    sudo useradd -m -s /bin/bash -g $GRUPO -d $DIRECTORIO $USUARIO
 
+    # Crear usuario con grupo y directorio home
+    echo "Creando usuario $USUARIO con grupo $GRUPO y home $DIR_HOME..."
+    sudo useradd -m -s /bin/bash -g $GRUPO -d $DIR_HOME $USUARIO
 
+    # Configurar permisos del directorio home
     if [[ -d $DIR_HOME ]]; then
+        echo "Configurando permisos para $DIR_HOME..."
         sudo chown $USUARIO:$GRUPO $DIR_HOME
         sudo chmod 750 $DIR_HOME
     fi
-
 done
+
 IFS=$ANT_IFS
 
-echo
-echo "Validación"
-grep TP /etc/passwd /etc/group
-
+echo "Proceso de creación de usuarios finalizado."
