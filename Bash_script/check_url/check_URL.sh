@@ -16,49 +16,51 @@ clear
 #  - Generar un archivo de log por dominio con el resultado
 ###############################
 
-LISTA=$1
-
-
+LISTA="Lista_URL.txt"
 BASE_DIR="/tmp/head-check"
-LOG_FILE="/var/log/status_url.log"
-LOG_OK="/temp/ok/dominio.log"
 
-sudo mkdir -p /$BASE_DIR/{Error/{cliente,servidor},ok}
+# Verificar archivo de entrada
+if [[ -z $LISTA ]]; then
+    echo "Error: Debes proporcionar un archivo con la lista de URLs."
+    exit 1
+fi
 
-ANT_IFS=$IFS
-IFS=$'\n'
+if [[ ! -f $LISTA ]]; then
+    echo "Error: El archivo $LISTA no existe."
+    exit 1
+fi
 
-for LINEA in `cat $LISTA |  grep -v ^#`
-do
-#---- Dentro del bucle ----#
-  # Obtener el código de estado HTTP
-  URL=$(echo $LINEA |awk '{print $2}')
-  STATUS_CODE=$(curl -LI -o /dev/null -w '%{http_code}\n' -s "$URL")
+#Directorios
+mkdir -p "$BASE_DIR/ok" "$BASE_DIR/Error/cliente" "$BASE_DIR/Error/servidor"
 
-  # Fecha y hora actual en formato yyyymmdd_hhmmss
-  TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+#URLs
+while IFS= read -r LINE; do
 
-  # Registrar en el archivo /var/log/status_url.log
-  echo "$TIMESTAMP - Code:$STATUS_CODE - URL:$URL" |sudo tee -a  "$LOG_FILE"
+    [[ -z "$LINE" || "$LINE" == \#* ]] && continue
 
-  DOMINIO=$(echo $LINEA |awk '{print $1}')
-  if [[ $STATUS_CODE == 200 ]]; then
-      DIR="$BASE_DIR/ok/$DOMINIO.log"
-  fi
 
-  if [[ $STATUS_CODE -ge 400 && $STATUS_CODE -lt 500 ]]; then
-      DIR="$BASE_DIR/Error/cliente/$DOMINIO.log"
-  fi
+    DOMINIO=$(echo "$LINE" | awk '{print $1}')
+    URL=$(echo "$LINE" | awk '{print $2}')
 
-  if [[ $STATUS_CODE -ge 500 && $STATUS_CODE -lt 600 ]]; then
-      DIR="$BASE_DIR/Error/servidor/$DOMINIO.log"
-  fi
 
-  echo "$TIMESTAMP - Code:$STATUS_CODE - URL:$URL" |sudo tee -a  "$LOG_FILE"
+    STATUS_CODE=$(curl -LI -o /dev/null -w '%{http_code}' -s "$URL")
 
-#-------------------------#
-done
-IFS=$ANT_IFS
+    # Clasificar
+    if [[ $STATUS_CODE -eq 200 ]]; then
+        DIR="$BASE_DIR/ok"
+    elif [[ $STATUS_CODE -ge 400 && $STATUS_CODE -lt 500 ]]; then
+        DIR="$BASE_DIR/Error/cliente"
+    elif [[ $STATUS_CODE -ge 500 && $STATUS_CODE -lt 600 ]]; then
+        DIR="$BASE_DIR/Error/servidor"
+    else
+        DIR="$BASE_DIR/Error/cliente" # Manejo de códigos inesperados
+        STATUS_CODE="Error"
+    fi
+
+    # Registrar en el archivo de log
+    echo "$DOMINIO - $URL - Code: $STATUS_CODE" > "$DIR/$DOMINIO.log"
+
+done < "$LISTA"
 
 sudo tree $BASE_DIR
 
